@@ -108,6 +108,8 @@ auto run_mlir_compiler_generic(tt::ForgeGraphModule& module, const std::optional
             throw std::runtime_error("Failed to generate flatbuffer binary.");
         }
 
+        // Save the TTNN Binary File
+        runtime::Binary(binary).store("./model_fb.ttnn");
         tt::log_info(LogMLIRCompiler, "Flatbuffer binary generated successfully.");
         return binary;
     }

@@ -20,7 +20,8 @@ void RuntimeModule(py::module &m_runtime)
         .def("get_program_inputs", &runtime::Binary::getProgramInputs)
         .def("get_program_outputs", &runtime::Binary::getProgramOutputs)
         .def("store", &runtime::Binary::store)
-        .def("as_json", &runtime::Binary::asJson);
+        .def("as_json", &runtime::Binary::asJson)
+        .def_static("load_from_file", &tt::runtime::Binary::loadFromPath);  // Corrected def_static binding
     m_runtime.def("run_program", &tt::run_program);
 
     py::class_<Tensor>(m_runtime, "Tensor")
@@ -44,6 +45,8 @@ void RuntimeModule(py::module &m_runtime)
 
     py::class_<ProgramState>(m_runtime, "ProgramState")
         .def(py::init<ProgramType, std::vector<Tensor>, std::vector<Tensor>>());
+    m_runtime.def("save_program_state_as_bin", &tt::save_program_state_as_bin);
+    m_runtime.def("load_program_state_from_bin", &tt::load_program_state_from_bin);
 
     py::class_<ModelState>(m_runtime, "ModelState")
         .def(py::init<runtime::Binary>())

@@ -13,6 +13,7 @@ from typing import Dict, List, Any, Optional
 from forge._C import ForgeGraphModule
 from forge._C.graph import Graph
 import forge._C.graph as pygraph
+import forge._C.runtime as rt
 from forge._C.runtime import (
     Binary,
     TensorPool,
@@ -261,6 +262,10 @@ class CompiledModel:
 
         pstate = create_program_state(program_type, self.tensor_pool, persistent_tensors)
         self.runtime_model_state.init_program_state(pstate)
+        # TODO Add the ENV Variables to Invoke the standalone Feature
+        rt.save_program_state_as_bin(pstate, "./programstate.bin")
+        # saved_state = rt.load_program_state_from_bin("./programstate.bin")
+        # self.runtime_model_state.init_program_state(saved_state)
 
     def tie_grad_fn(self, grad_id: int, grad: torch.Tensor) -> None:
         """

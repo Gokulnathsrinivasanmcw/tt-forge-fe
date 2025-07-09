@@ -36,6 +36,84 @@ ProgramState create_program_state(
     return ProgramState{program_type, persistent_inputs, {}};
 }
 
+void save_program_state_as_bin(const ProgramState& state, const std::string& path)
+{
+    torch::serialize::OutputArchive archive;
+
+    archive.write("program_type", torch::tensor(static_cast<int64_t>(state.program_type)));
+
+    // Save persistent inputs
+    torch::serialize::OutputArchive inputs_archive;
+    inputs_archive.write("count", torch::tensor(static_cast<int64_t>(state.persistent_inputs.size())));
+
+    for (size_t i = 0; i < state.persistent_inputs.size(); ++i)
+    {
+        state.persistent_inputs[i].to_torch().sizes() << "\n";
+        inputs_archive.write(std::to_string(i), state.persistent_inputs[i].to_torch());
+    }
+
+    archive.write("persistent_inputs", inputs_archive);
+
+    // Save outputs
+    torch::serialize::OutputArchive outputs_archive;
+    outputs_archive.write("count", torch::tensor(static_cast<int64_t>(state.outputs.size())));
+
+    for (size_t i = 0; i < state.outputs.size(); ++i)
+    {
+        outputs_archive.write(std::to_string(i), state.outputs[i].to_torch());
+    }
+
+    archive.write("outputs", outputs_archive);
+
+    // Save the archive to file
+    archive.save_to(path);
+}
+
+ProgramState load_program_state_from_bin(const std::string& path)
+{
+    torch::serialize::InputArchive archive;
+    archive.load_from(path);
+
+    // Load program type
+    torch::Tensor pt_tensor;
+    archive.read("program_type", pt_tensor);
+    ProgramType program_type = static_cast<ProgramType>(pt_tensor.item<int64_t>());
+
+    // Load persistent inputs
+    torch::serialize::InputArchive inputs_archive;
+    archive.read("persistent_inputs", inputs_archive);
+
+    torch::Tensor input_count_tensor;
+    inputs_archive.read("count", input_count_tensor);
+    int64_t input_count = input_count_tensor.item<int64_t>();
+
+    std::vector<Tensor> persistent_inputs;
+    for (int64_t i = 0; i < input_count; ++i)
+    {
+        torch::Tensor t;
+        inputs_archive.read(std::to_string(i), t);
+        persistent_inputs.emplace_back(Tensor(t));
+    }
+
+    // Load outputs
+    torch::serialize::InputArchive outputs_archive;
+    archive.read("outputs", outputs_archive);
+
+    torch::Tensor output_count_tensor;
+    outputs_archive.read("count", output_count_tensor);
+    int64_t output_count = output_count_tensor.item<int64_t>();
+
+    std::vector<tt::Tensor> outputs;
+    for (int64_t i = 0; i < output_count; ++i)
+    {
+        torch::Tensor t;
+        outputs_archive.read(std::to_string(i), t);
+        outputs.emplace_back(tt::Tensor(t));
+    }
+
+    return ProgramState{program_type, persistent_inputs, outputs};
+}
+
 void ModelState::run_program(ProgramType program_type, std::vector<tt::Tensor> act_inputs)
 {
     // ISSUE(#1346): So far, the device_id is hardcoded to 0 - make it user-configurable.

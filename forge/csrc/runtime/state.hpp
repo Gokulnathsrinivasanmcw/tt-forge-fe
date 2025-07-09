@@ -76,6 +76,10 @@ struct ModelState
 
     void run_program(ProgramType program_type, std::vector<tt::Tensor> act_inputs);
 };
+// Dump The Programs State
+void save_program_state_as_bin(const ProgramState& state, const std::string& path);
+// Load the Program State
+ProgramState load_program_state_from_bin(const std::string& path);
 
 ProgramState create_program_state(
     ProgramType program_type, const TensorPool& tensor_pool, std::vector<std::string> persistent_input_names);
